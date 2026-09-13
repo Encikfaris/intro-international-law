@@ -1,0 +1,882 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>IRB20103 Introduction to International Law — Build Your Own Country</title>
+<meta name="description" content="Learn international law by building your own country and defending it at a UN-style crisis simulation. IRB20103, UniSZA." />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Playfair+Display:ital,wght@0,500;0,700;1,500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0a0d18;
+    --ink:#f0f2fa;
+    --muted:#8b93b8;
+    --gold:#d9b45e;
+    --gold-2:#f0d28a;
+    --blue:#5b8dee;
+    --red:#e0607a;
+    --card:rgba(255,255,255,.035);
+    --stroke:rgba(255,255,255,.09);
+    --radius:18px;
+    --maxw:1160px;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0;background:var(--bg);color:var(--ink);
+    font-family:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    line-height:1.65;-webkit-font-smoothing:antialiased;overflow-x:hidden;
+  }
+  h1,h2,h3,h4,.display{font-family:"Playfair Display",Georgia,serif;line-height:1.12;letter-spacing:-.01em;margin:0;font-weight:500}
+  p{margin:0}
+  a{color:inherit;text-decoration:none}
+
+  /* ============ BACKDROP ============ */
+  .aurora{position:fixed;inset:0;z-index:0;overflow:hidden;pointer-events:none}
+  .blob{position:absolute;border-radius:50%;filter:blur(100px);opacity:.5;will-change:transform}
+  .b1{width:680px;height:680px;top:-260px;left:-180px;background:radial-gradient(circle,#d9b45e,transparent 65%);animation:d1 24s ease-in-out infinite}
+  .b2{width:600px;height:600px;top:-140px;right:-200px;background:radial-gradient(circle,#5b8dee,transparent 65%);animation:d2 28s ease-in-out infinite}
+  .b3{width:720px;height:720px;bottom:-400px;left:32%;background:radial-gradient(circle,#7a4de0,transparent 68%);opacity:.3;animation:d1 32s ease-in-out infinite reverse}
+  @keyframes d1{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(60px,50px) scale(1.12)}}
+  @keyframes d2{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(-70px,60px) scale(1.08)}}
+
+  .globe-grid{
+    position:fixed;inset:0;z-index:0;pointer-events:none;
+    background-image:
+      linear-gradient(rgba(255,255,255,.04) 1px,transparent 1px),
+      linear-gradient(90deg,rgba(255,255,255,.04) 1px,transparent 1px);
+    background-size:72px 72px;
+    -webkit-mask-image:radial-gradient(ellipse 85% 55% at 50% 0%,#000 8%,transparent 70%);
+    mask-image:radial-gradient(ellipse 85% 55% at 50% 0%,#000 8%,transparent 70%);
+  }
+
+  #progress{position:fixed;top:0;left:0;height:2px;width:0;z-index:60;
+    background:linear-gradient(90deg,var(--gold),var(--blue));
+    box-shadow:0 0 14px rgba(217,180,94,.7);transition:width .1s linear}
+
+  .wrap{position:relative;z-index:1}
+  .container{max-width:var(--maxw);margin:0 auto;padding:0 24px}
+  section{padding:110px 0}
+
+  /* ============ HERO ============ */
+  .hero{min-height:100svh;display:flex;align-items:center;padding:120px 0 90px;position:relative}
+  .hero-grid{display:grid;grid-template-columns:1.2fr auto;gap:60px;align-items:center}
+  @media (max-width:920px){.hero-grid{grid-template-columns:1fr;gap:48px}}
+
+  .eyebrow{
+    display:inline-flex;align-items:center;gap:10px;
+    font-size:.72rem;letter-spacing:.22em;text-transform:uppercase;font-weight:600;
+    color:var(--gold-2);border:1px solid rgba(217,180,94,.35);
+    background:rgba(217,180,94,.06);padding:9px 18px;border-radius:999px;
+    backdrop-filter:blur(8px);
+  }
+  .eyebrow .dot{width:5px;height:5px;border-radius:50%;background:var(--gold);box-shadow:0 0 10px var(--gold);animation:pulse 2s infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+
+  .hero h1{font-size:clamp(2.4rem,5.5vw,4.4rem);margin:28px 0 0;font-weight:500}
+  .hero h1 em{font-style:italic;color:var(--gold-2)}
+  .hero .code{
+    display:block;font-family:"Inter",sans-serif;font-size:.85rem;letter-spacing:.28em;
+    text-transform:uppercase;color:var(--muted);font-weight:500;margin-bottom:14px;
+  }
+  .lede{font-size:clamp(1rem,1.4vw,1.12rem);color:var(--muted);max-width:52ch;margin-top:24px}
+  .lede strong{color:var(--ink);font-weight:500}
+
+  .cta-row{display:flex;flex-wrap:wrap;gap:14px;margin-top:36px}
+  .btn{display:inline-flex;align-items:center;gap:10px;padding:14px 28px;border-radius:999px;
+    font-weight:600;font-size:.92rem;border:1px solid transparent;cursor:pointer;
+    transition:transform .25s,box-shadow .25s,background .25s}
+  .btn-primary{background:linear-gradient(120deg,var(--gold),var(--gold-2));color:#14100a;
+    box-shadow:0 12px 40px -14px rgba(217,180,94,.9)}
+  .btn-primary:hover{transform:translateY(-2px);box-shadow:0 18px 50px -14px rgba(240,210,138,.9)}
+  .btn-ghost{border-color:var(--stroke);color:var(--ink);background:rgba(255,255,255,.02)}
+  .btn-ghost:hover{background:rgba(255,255,255,.07);transform:translateY(-2px)}
+
+  /* ============ VIDEO CARD (VERTICAL / SHORTS) ============ */
+  .hero-video{position:relative;display:flex;justify-content:center}
+  .video-card{
+    position:relative;
+    aspect-ratio:9/16;
+    width:100%;
+    max-width:320px;
+    border-radius:20px;overflow:hidden;cursor:pointer;
+    border:1px solid rgba(217,180,94,.35);
+    background:linear-gradient(135deg,#141a30 0%,#0a0d18 100%);
+    box-shadow:0 30px 80px -30px rgba(217,180,94,.55),0 0 0 1px rgba(255,255,255,.04) inset;
+    transition:transform .4s cubic-bezier(.2,.7,.2,1), box-shadow .4s;
+  }
+  .video-card:hover{
+    transform:translateY(-6px);
+    box-shadow:0 45px 100px -30px rgba(217,180,94,.75),0 0 0 1px rgba(240,210,138,.15) inset;
+  }
+  .video-card::before{
+    content:"";position:absolute;inset:0;
+    background:
+      radial-gradient(circle at 22% 28%, rgba(217,180,94,.42), transparent 52%),
+      radial-gradient(circle at 78% 72%, rgba(91,141,238,.42), transparent 52%),
+      radial-gradient(circle at 60% 20%, rgba(122,77,224,.30), transparent 55%);
+    opacity:.9;animation:vidShift 14s ease-in-out infinite alternate;
+  }
+  @keyframes vidShift{0%{transform:scale(1) rotate(0deg)}100%{transform:scale(1.15) rotate(3deg)}}
+  .video-card::after{
+    content:"";position:absolute;inset:0;
+    background-image:
+      linear-gradient(rgba(255,255,255,.06) 1px,transparent 1px),
+      linear-gradient(90deg,rgba(255,255,255,.06) 1px,transparent 1px);
+    background-size:34px 34px;
+    -webkit-mask-image:radial-gradient(ellipse at center, #000 25%, transparent 75%);
+    mask-image:radial-gradient(ellipse at center, #000 25%, transparent 75%);
+    opacity:.5;
+  }
+  .video-card .play-btn{
+    position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+    width:64px;height:64px;border-radius:50%;
+    background:linear-gradient(135deg,var(--gold-2),var(--gold));
+    color:#14100a;display:grid;place-items:center;font-size:1.2rem;border:none;cursor:pointer;
+    padding-left:4px;z-index:2;animation:ring 2.6s infinite;transition:transform .3s;
+  }
+  .video-card:hover .play-btn{transform:translate(-50%,-50%) scale(1.08)}
+  @keyframes ring{
+    0%{box-shadow:0 0 0 0 rgba(240,210,138,.55)}
+    70%{box-shadow:0 0 0 26px rgba(240,210,138,0)}
+    100%{box-shadow:0 0 0 0 rgba(240,210,138,0)}
+  }
+  .video-card .video-caption{
+    position:absolute;bottom:20px;left:20px;right:20px;z-index:2;
+    display:flex;align-items:center;gap:10px;
+    font-size:.7rem;letter-spacing:.22em;text-transform:uppercase;
+    font-weight:600;color:var(--gold-2);
+  }
+  .video-card .video-caption::before{
+    content:"";width:6px;height:6px;border-radius:50%;
+    background:var(--red);box-shadow:0 0 10px var(--red);
+    animation:pulse 1.6s infinite;
+  }
+  .video-card iframe{position:absolute;inset:0;width:100%;height:100%;border:0;z-index:3}
+
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:26px;
+    margin-top:80px;padding-top:34px;border-top:1px solid var(--stroke);max-width:820px}
+  .stat b{display:block;font-family:"Playfair Display",serif;font-size:1.9rem;font-weight:500;color:var(--gold-2)}
+  .stat span{font-size:.74rem;letter-spacing:.16em;text-transform:uppercase;color:var(--muted)}
+
+  .scroll-hint{position:absolute;bottom:34px;left:50%;transform:translateX(-50%);
+    font-size:.68rem;letter-spacing:.24em;text-transform:uppercase;color:var(--muted);
+    display:flex;flex-direction:column;align-items:center;gap:10px}
+  .scroll-hint i{display:block;width:1px;height:36px;background:linear-gradient(var(--muted),transparent);animation:drop 2s infinite}
+  @keyframes drop{0%{opacity:0;transform:scaleY(.2)}50%{opacity:1}100%{opacity:0;transform:scaleY(1)}}
+
+  /* ============ HEADINGS ============ */
+  .kicker{font-size:.74rem;letter-spacing:.24em;text-transform:uppercase;color:var(--gold);font-weight:600}
+  .section-title{font-size:clamp(1.9rem,4vw,3rem);margin-top:16px;font-weight:500}
+  .section-title em{font-style:italic;color:var(--gold-2)}
+  .section-sub{color:var(--muted);max-width:66ch;margin-top:18px}
+
+  /* ============ CARDS ============ */
+  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:20px;margin-top:50px}
+  .card{position:relative;overflow:hidden;background:var(--card);border:1px solid var(--stroke);
+    border-radius:var(--radius);padding:30px 26px;backdrop-filter:blur(10px);
+    transition:transform .35s cubic-bezier(.2,.7,.2,1),border-color .35s}
+  .card:hover{transform:translateY(-6px);border-color:rgba(217,180,94,.4)}
+  .card::before{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;
+    background:radial-gradient(400px circle at var(--x,50%) var(--y,50%),rgba(217,180,94,.14),transparent 62%);
+    opacity:0;transition:opacity .35s}
+  .card:hover::before{opacity:1}
+  .card .icon{width:42px;height:42px;border-radius:12px;display:grid;place-items:center;
+    background:linear-gradient(135deg,rgba(217,180,94,.18),rgba(91,141,238,.15));
+    border:1px solid rgba(217,180,94,.28);font-size:1.15rem;margin-bottom:18px}
+  .card h3{font-size:1.12rem;font-weight:500;margin-bottom:10px}
+  .card p{color:var(--muted);font-size:.92rem}
+
+  /* ============ MISSION ============ */
+  .mission{position:relative;border-radius:26px;padding:1.5px;margin-top:50px;
+    background:linear-gradient(120deg,rgba(217,180,94,.85),rgba(91,141,238,.55),rgba(122,77,224,.65),rgba(217,180,94,.85));
+    background-size:300% 300%;animation:shift 14s linear infinite}
+  @keyframes shift{to{background-position:300% 0}}
+  .mission-inner{background:rgba(9,11,20,.94);border-radius:25px;padding:clamp(36px,5vw,68px);backdrop-filter:blur(20px)}
+  .mission-tag{
+    display:inline-flex;align-items:center;gap:8px;
+    font-size:.7rem;letter-spacing:.24em;text-transform:uppercase;font-weight:700;
+    color:var(--bg);background:var(--gold-2);padding:7px 16px;border-radius:999px;margin-bottom:26px;
+  }
+  .mission h3{font-size:clamp(1.7rem,3.6vw,2.6rem);font-weight:500;line-height:1.1}
+  .mission h3 em{font-style:italic;color:var(--gold-2)}
+  .mission p{color:var(--muted);margin-top:22px;max-width:72ch;font-size:1.02rem}
+  .mission p strong{color:var(--ink);font-weight:500}
+
+  .mission-steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:24px;margin-top:48px}
+  .step{position:relative;padding-left:22px;border-left:2px solid rgba(217,180,94,.5)}
+  .step b{font-family:"Playfair Display",serif;font-size:1.05rem;font-weight:600;display:block;color:var(--gold-2)}
+  .step span{font-size:.88rem;color:var(--muted);display:block;margin-top:6px}
+
+  /* ============ BUILD GRID ============ */
+  .build-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:16px;margin-top:50px}
+  .build{background:var(--card);border:1px solid var(--stroke);border-radius:16px;padding:24px 22px;
+    transition:transform .3s,border-color .3s,background .3s;position:relative;overflow:hidden}
+  .build:hover{transform:translateY(-5px);border-color:rgba(217,180,94,.4);background:rgba(255,255,255,.05)}
+  .build .em{font-size:1.7rem;display:block;margin-bottom:14px}
+  .build b{font-family:"Playfair Display",serif;font-size:1.08rem;font-weight:500;display:block}
+  .build span{font-size:.84rem;color:var(--muted);display:block;margin-top:6px;line-height:1.5}
+
+  /* ============ CRISIS ============ */
+  .crisis{display:grid;grid-template-columns:1fr auto 1fr;gap:20px;align-items:center;margin-top:50px}
+  .side{background:var(--card);border:1px solid var(--stroke);border-radius:18px;padding:32px 28px;
+    transition:transform .3s,border-color .3s}
+  .side:hover{transform:translateY(-4px)}
+  .side.alpha{border-color:rgba(91,141,238,.35)}
+  .side.alpha:hover{border-color:rgba(91,141,238,.6)}
+  .side.delta{border-color:rgba(224,96,122,.35)}
+  .side.delta:hover{border-color:rgba(224,96,122,.6)}
+  .side .flag{font-size:2rem;margin-bottom:16px}
+  .side h4{font-family:"Playfair Display",serif;font-size:1.5rem;font-weight:500;margin-bottom:6px}
+  .side .sub{font-size:.74rem;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);font-weight:600}
+  .side p{color:var(--muted);font-size:.93rem;margin-top:16px}
+  .vs{font-family:"Playfair Display",serif;font-size:1.6rem;font-style:italic;color:var(--gold);text-align:center}
+
+  .crisis-note{
+    margin-top:40px;padding:28px 30px;border-radius:16px;
+    background:rgba(217,180,94,.05);border:1px solid rgba(217,180,94,.2);
+    color:var(--muted);font-size:.95rem;text-align:center;
+  }
+  .crisis-note strong{color:var(--gold-2);font-weight:600}
+
+  /* ============ PICK A SIDE MINI GAME ============ */
+  .pick{text-align:center;margin-top:48px}
+  .pick-question{
+    font-family:"Playfair Display",serif;
+    font-size:clamp(1.3rem,2.6vw,1.8rem);
+    font-weight:500;
+    color:var(--ink);
+    max-width:36ch;
+    margin:0 auto;
+  }
+  .pick-question em{font-style:italic;color:var(--gold-2)}
+
+  .pick-buttons{display:flex;justify-content:center;gap:18px;margin-top:38px;flex-wrap:wrap}
+
+  .pick-btn{
+    min-width:190px;padding:20px 32px;border-radius:16px;
+    border:1px solid var(--stroke);background:rgba(255,255,255,.03);color:var(--ink);
+    font-family:"Playfair Display",serif;font-size:1.15rem;font-weight:500;cursor:pointer;
+    transition:transform .3s cubic-bezier(.2,.7,.2,1), border-color .3s, background .3s, box-shadow .3s;
+    backdrop-filter:blur(10px);
+    display:flex;flex-direction:column;align-items:center;gap:6px;
+  }
+  .pick-btn .flag{font-size:1.6rem;line-height:1}
+  .pick-btn .label{font-size:.72rem;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);font-family:"Inter",sans-serif;font-weight:600}
+
+  .pick-btn.alpha:hover,
+  .pick-btn.alpha.active{
+    border-color:rgba(91,141,238,.7);
+    background:rgba(91,141,238,.08);
+    transform:translateY(-5px);
+    box-shadow:0 20px 50px -20px rgba(91,141,238,.7);
+  }
+  .pick-btn.delta:hover,
+  .pick-btn.delta.active{
+    border-color:rgba(224,96,122,.7);
+    background:rgba(224,96,122,.08);
+    transform:translateY(-5px);
+    box-shadow:0 20px 50px -20px rgba(224,96,122,.7);
+  }
+
+  .pick-response{
+    margin-top:42px;min-height:100px;
+    display:flex;justify-content:center;align-items:center;
+  }
+  .pick-card{
+    max-width:520px;padding:26px 32px;border-radius:16px;
+    border:1px solid rgba(217,180,94,.35);
+    background:rgba(217,180,94,.05);color:var(--ink);
+    font-size:1.05rem;line-height:1.55;
+    opacity:0;transform:translateY(10px);
+    transition:opacity .5s ease, transform .5s ease;
+  }
+  .pick-card.show{opacity:1;transform:none}
+  .pick-card strong{
+    display:block;margin-top:10px;
+    font-family:"Playfair Display",serif;font-size:1.15rem;
+    color:var(--gold-2);font-weight:500;font-style:italic;
+  }
+  .pick-hint{font-size:.78rem;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);margin-top:34px}
+
+  /* ============ WEEKS ============ */
+  .weeks{display:grid;grid-template-columns:repeat(auto-fit,minmax(330px,1fr));gap:18px;margin-top:54px}
+  .week{position:relative;background:var(--card);border:1px solid var(--stroke);border-radius:18px;
+    padding:30px 28px;transition:border-color .35s,transform .35s,background .35s;overflow:hidden}
+  .week:hover{border-color:rgba(217,180,94,.4);transform:translateY(-5px);background:rgba(255,255,255,.05)}
+  .week::after{content:"";position:absolute;top:0;left:0;width:3px;height:0;background:linear-gradient(var(--gold),var(--blue));transition:height .5s cubic-bezier(.2,.7,.2,1)}
+  .week:hover::after{height:100%}
+  .week .wnum{font-size:.7rem;letter-spacing:.22em;text-transform:uppercase;color:var(--gold);font-weight:700}
+  .week h4{font-family:"Playfair Display",serif;font-size:1.22rem;font-weight:500;margin:14px 0 0;line-height:1.25}
+  .week .hook{font-family:"Playfair Display",serif;font-style:italic;color:var(--gold-2);font-size:1rem;margin-top:14px;line-height:1.4}
+  .week p{font-size:.88rem;color:var(--muted);margin-top:14px;line-height:1.6}
+  .week p strong{color:var(--ink);font-weight:500}
+
+  /* ============ ASSESSMENT ============ */
+  .assess{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:20px;margin-top:50px}
+  .assess-card{background:var(--card);border:1px solid var(--stroke);border-radius:18px;padding:34px 28px;text-align:center;
+    transition:transform .3s,border-color .3s}
+  .assess-card:hover{transform:translateY(-5px);border-color:rgba(217,180,94,.4)}
+  .assess-card b{font-family:"Playfair Display",serif;font-size:2.6rem;font-weight:500;color:var(--gold-2);display:block;line-height:1}
+  .assess-card span{display:block;margin-top:14px;font-size:.85rem;color:var(--muted)}
+
+  /* ============ FINAL ============ */
+  .final{text-align:center;padding:clamp(50px,8vw,90px) 28px;border-radius:26px;border:1px solid var(--stroke);
+    background:radial-gradient(ellipse at 50% 0%,rgba(217,180,94,.16),transparent 70%),rgba(255,255,255,.02)}
+  .final h2{font-size:clamp(1.9rem,4.4vw,3rem);font-weight:500}
+  .final h2 em{font-style:italic;color:var(--gold-2)}
+  .final p{color:var(--muted);max-width:56ch;margin:20px auto 0}
+  .final .cta-row{justify-content:center}
+
+  footer{border-top:1px solid var(--stroke);padding:38px 0 56px;margin-top:90px;
+    display:flex;flex-wrap:wrap;gap:16px;justify-content:space-between;color:var(--muted);font-size:.83rem}
+  footer b{color:var(--ink);font-weight:500}
+
+  .reveal{opacity:0;transform:translateY(26px);transition:opacity .9s cubic-bezier(.2,.7,.2,1),transform .9s cubic-bezier(.2,.7,.2,1)}
+  .reveal.in{opacity:1;transform:none}
+
+  @media (max-width:720px){
+    section{padding:80px 0}
+    .scroll-hint{display:none}
+    .crisis{grid-template-columns:1fr}
+    .vs{padding:6px 0}
+    .video-card{max-width:280px}
+  }
+  @media (prefers-reduced-motion:reduce){
+    *{animation:none!important;transition:none!important}
+    .reveal{opacity:1;transform:none}
+  }
+</style>
+</head>
+<body>
+
+<div id="progress"></div>
+
+<div class="aurora" aria-hidden="true">
+  <div class="blob b1"></div>
+  <div class="blob b2"></div>
+  <div class="blob b3"></div>
+</div>
+<div class="globe-grid" aria-hidden="true"></div>
+
+<div class="wrap">
+
+  <!-- ============ HERO ============ -->
+  <header class="hero">
+    <div class="container">
+      <div class="hero-grid">
+
+        <div class="hero-text">
+          <span class="eyebrow"><span class="dot"></span> Semester 1 · 2026 / 2027 · UniSZA</span>
+
+          <h1>
+            <span class="code">IRB20103</span>
+            Build a nation.<br><em>Defend it.</em>
+          </h1>
+
+          <p class="lede">
+            Introduction to International Law — but not the way you'd expect.
+            You won't just read about sovereignty, self-defence and treaties.
+            You'll <strong>create your own country</strong>, give it a flag and a
+            government, then walk into a UN-style crisis simulation and fight for
+            its position with the law on your side.
+          </p>
+
+          <div class="cta-row">
+            <a class="btn btn-primary" href="#mission">Your mission →</a>
+            <a class="btn btn-ghost" href="#weeks">See all 14 weeks</a>
+          </div>
+        </div>
+
+        <!-- VIDEO CARD — always visible, no reveal animation -->
+        <div class="hero-video">
+          <div class="video-card"
+               data-video-id="LKhNDXogFTE"
+               role="button"
+               tabindex="0"
+               aria-label="Play 1-minute course trailer">
+            <span class="play-btn" aria-hidden="true">▶</span>
+            <span class="video-caption">1-minute trailer</span>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="stats">
+        <div class="stat"><b>14</b><span>Weeks</span></div>
+        <div class="stat"><b>10</b><span>Nations built</span></div>
+        <div class="stat"><b>86</b><span>Diplomats</span></div>
+        <div class="stat"><b>1</b><span>Global crisis</span></div>
+      </div>
+    </div>
+
+    <div class="scroll-hint"><span>Scroll</span><i></i></div>
+  </header>
+
+  <!-- ============ WHY ============ -->
+  <section id="why">
+    <div class="container">
+      <div class="reveal">
+        <p class="kicker">Why this course hits different</p>
+        <h2 class="section-title">You don't study the law. <em>You use it.</em></h2>
+        <p class="section-sub">
+          International law isn't a list of answers. It's a toolkit for arguing,
+          negotiating and deciding when there's no perfect outcome. This course
+          drops you straight into that pressure — and lets you find out what
+          you'd actually do.
+        </p>
+      </div>
+
+      <div class="cards">
+        <article class="card reveal">
+          <div class="icon">🏛️</div>
+          <h3>You become the government</h3>
+          <p>Head of state, foreign minister, legal adviser — you pick a role and play it for real. Every position you take has to be legally defensible.</p>
+        </article>
+        <article class="card reveal">
+          <div class="icon">⚖️</div>
+          <h3>You learn to argue like a lawyer</h3>
+          <p>Master the ILAC method — Issue, Law, Application, Conclusion — and use it on real disputes about force, territory and jurisdiction.</p>
+        </article>
+        <article class="card reveal">
+          <div class="icon">🌍</div>
+          <h3>You see the world differently</h3>
+          <p>Once you've built a country and defended it, you'll never read a news headline about war, treaties or the UN the same way again.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ MISSION ============ -->
+  <section id="mission">
+    <div class="container">
+      <div class="reveal">
+        <p class="kicker">Your mission</p>
+        <h2 class="section-title">The National Diplomatic <em>World Simulation</em></h2>
+        <p class="section-sub">
+          One connected assignment across the whole semester. Two stages. Ten
+          student-built nations. One international crisis. And you in the middle
+          of it, deciding what the world should do.
+        </p>
+      </div>
+
+      <div class="mission reveal">
+        <div class="mission-inner">
+          <span class="mission-tag">Mission Briefing</span>
+          <h3>You don't get handed a country. <em>You build one.</em></h3>
+          <p>
+            First, you and your team <strong>create a fictional nation from scratch</strong> —
+            its name, its flag, its capital, its government, its leader, its
+            national interests. Everything is yours to design. Then the lecturer
+            drops a crisis on the world: State Alpha has used military force
+            against State Delta, claiming self-defence. Delta calls it aggression.
+            The international community is called to an emergency assembly.
+          </p>
+          <p style="margin-top:16px">
+            Now your country has to take a side. You'll research the law,
+            write a full diplomatic position paper, deliver an opening statement,
+            negotiate with other delegations, and vote on two competing
+            resolutions. <strong>You are assessed on your legal reasoning</strong> —
+            not on whether you agree with any real government.
+          </p>
+
+          <div class="mission-steps">
+            <div class="step"><b>Build</b><span>Design your nation — flag, name, leadership, identity.</span></div>
+            <div class="step"><b>Research</b><span>Work out where your country stands under international law.</span></div>
+            <div class="step"><b>Write</b><span>Produce a 15+ page diplomatic position paper.</span></div>
+            <div class="step"><b>Debate</b><span>Defend your position at a UN-style assembly.</span></div>
+            <div class="step"><b>Vote</b><span>Decide how the world responds — and justify it.</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="reveal" style="margin-top:90px">
+        <p class="kicker">What you'll create</p>
+        <h2 class="section-title">Everything a real nation needs</h2>
+        <p class="section-sub">
+          Your nation is fictional, but it has to feel real. Every choice you make
+          shapes how other delegations treat you — and how you argue your case.
+        </p>
+      </div>
+
+      <div class="build-grid">
+        <div class="build reveal"><span class="em">🏳️</span><b>Your flag</b><span>Design the symbol your nation stands behind.</span></div>
+        <div class="build reveal"><span class="em">🗺️</span><b>Your name</b><span>Give your country an identity the world will remember.</span></div>
+        <div class="build reveal"><span class="em">🏛️</span><b>Your government</b><span>Presidential, parliamentary, monarchy — the framework is set, the details are yours.</span></div>
+        <div class="build reveal"><span class="em">👤</span><b>Your leaders</b><span>Name your head of state, foreign minister, legal adviser.</span></div>
+        <div class="build reveal"><span class="em">🎯</span><b>Your interests</b><span>What does your nation care about most? Trade? Security? Sovereignty?</span></div>
+        <div class="build reveal"><span class="em">🤝</span><b>Your alliances</b><span>Who do you naturally side with — and who do you need to win over?</span></div>
+        <div class="build reveal"><span class="em">📜</span><b>Your position</b><span>Where do you stand on the crisis? And can you defend it?</span></div>
+        <div class="build reveal"><span class="em">⚖️</span><b>Your legal case</b><span>Build the argument that protects your nation's interests.</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ CRISIS ============ -->
+  <section id="crisis">
+    <div class="container">
+      <div class="reveal">
+        <p class="kicker">The crisis</p>
+        <h2 class="section-title">Alpha strikes Delta. <em>The world reacts.</em></h2>
+        <p class="section-sub">
+          In the fictional world, tensions between State Alpha and State Delta
+          have been building for years. Then Alpha launches military operations.
+          Delta calls it aggression. Everything changes.
+        </p>
+      </div>
+
+      <div class="crisis">
+        <div class="side alpha reveal">
+          <div class="flag">🔵</div>
+          <span class="sub">State Alpha</span>
+          <h4>"We were defending ourselves."</h4>
+          <p>
+            Alpha claims Delta carried out or supported actions that threatened
+            Alpha's forces and regional security. It says its military response
+            was a lawful exercise of the right to self-defence under Article 51
+            of the UN Charter.
+          </p>
+        </div>
+        <div class="vs reveal">vs</div>
+        <div class="side delta reveal">
+          <div class="flag">🔴</div>
+          <span class="sub">State Delta</span>
+          <h4>"This is aggression."</h4>
+          <p>
+            Delta rejects Alpha's justification entirely. It argues Alpha has
+            violated its territorial sovereignty and the prohibition on the use
+            of force — and that Alpha's actions amount to an act of aggression
+            under international law.
+          </p>
+        </div>
+      </div>
+
+      <div class="crisis-note reveal">
+        <strong>Your job:</strong> work out whether Alpha's use of force was lawful
+        — and decide what the international community should do about it. Both
+        resolutions are on the table. Neither one is the "correct" answer. You
+        have to choose, argue, and defend.
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ PICK A SIDE ============ -->
+  <section id="pick">
+    <div class="container">
+      <div class="reveal" style="text-align:center">
+        <p class="kicker">Before you build your nation</p>
+        <h2 class="section-title">Whose side are <em>you</em> on?</h2>
+        <p class="section-sub" style="margin-left:auto;margin-right:auto">
+          Go with your gut. There's no right answer — only the one you'll have to defend.
+        </p>
+      </div>
+
+      <div class="pick reveal">
+        <p class="pick-question">
+          Alpha has used force. Delta calls it aggression.
+          <em>Who do you stand with?</em>
+        </p>
+
+        <div class="pick-buttons">
+          <button class="pick-btn alpha" data-side="alpha" type="button">
+            <span class="flag">🔵</span>
+            <span>State Alpha</span>
+            <span class="label">"Self-defence"</span>
+          </button>
+          <button class="pick-btn delta" data-side="delta" type="button">
+            <span class="flag">🔴</span>
+            <span>State Delta</span>
+            <span class="label">"Aggression"</span>
+          </button>
+        </div>
+
+        <div class="pick-response" id="pickResponse" aria-live="polite"></div>
+
+        <p class="pick-hint">Pick a side to continue</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ WEEKS ============ -->
+  <section id="weeks">
+    <div class="container">
+      <div class="reveal">
+        <p class="kicker">The 14-week journey</p>
+        <h2 class="section-title">What you'll actually <em>explore</em></h2>
+        <p class="section-sub">
+          Every week builds toward the simulation. By the time you sit in that
+          assembly, you'll have the full legal toolkit you need — and you'll know
+          exactly how to use it.
+        </p>
+      </div>
+
+      <div class="weeks">
+
+        <div class="week reveal">
+          <div class="wnum">Week 01</div>
+          <h4>Nature & Development of International Law</h4>
+          <p class="hook">"Wait — who actually makes the rules?"</p>
+          <p>Where did international law come from, and why does it exist? You'll look at whether it's really "law" when there's no world police — and meet <strong>jus cogens</strong>, the handful of rules so fundamental that no country can ever opt out of them.</p>
+        </div>
+
+        <div class="week reveal">
+          <div class="wnum">Week 02</div>
+          <h4>Primary Sources of International Law</h4>
+          <p class="hook">"Where do you find the law?"</p>
+          <p>Treaties. Customary law. General principles. You'll learn how a rule becomes binding in the first place — sometimes even when nobody signed anything.</p>
+        </div>
+
+        <div class="week reveal">
+          <div class="wnum">Week 03</div>
+          <h4>Secondary Sources & Subsidiary Means</h4>
+          <p class="hook">"Whose opinion actually counts?"</p>
+          <p>Judges and scholars don't make the law — but they shape how it's read. You'll learn the difference between what's <strong>binding</strong> and what's merely <strong>persuasive</strong>.</p>
+        </div>
+
+        <div class="week reveal">
+          <div class="wnum">Week 04</div>
+          <h4>Municipal Law & International Law</h4>
+          <p class="hook">"What if your country's law says something else?"</p>
+          <p>What happens when a treaty says one thing and your national law says another? You'll dig into the doctrines of incorporation and transformation, and how courts untangle the mess.</p>
+        </div>
+
+        <div class="week reveal">
+          <div class="wnum">Week 05</div>
+          <h4>Personality & Recognition</h4>
+          <p class="hook">"How does a place become a country?"</p>
+          <p>Territory, government, population, capacity — the checklist for statehood. And why some places are countries to some states and not to others. Essential for the simulation.</p>
+        </div>
+
+        <div class="week reveal">
+          <div class="wnum">Week 06</div>
+          <h4>International Organisations</h4>
+          <p class="hook">"The clubs countries join."</p>
+          <p>The UN isn't just a talk shop. You'll see how international organisations have legal personality, real powers, and real limits — and how they act on the world stage.</p>
+        </div>
+
+        <div class="week reveal">
+          <div class="wnum">Week 07</div>
+          <h4>State Responsibility</h4>
+          <p class="hook">"When a country breaks the law."</p>
+          <p>What counts as an internationally wrongful act? When is a state responsible for what its officials do? And what happens after — who pays, and how?</p>
+        </div>
+
+        <div class="week reveal">
+          <div class="wnum">Week 08</div>
+          <h4>Law of Treaties & Diplomatic Relations</h4>
+          <p class="hook">"The art of the deal — and the diplomat's shield."</p>
+          <p>How treaties are made, broken and ended. Why diplomats can't be arrested. The rules that keep international business running even when things get ugly.</p>
+        </div>
+
+        <div class="week reveal">
+          <div class="wnum">Week 09</div>
+          <h4>State Territory & Territorial Jurisdiction</h4>
+          <p class="hook">"Whose ground is it anyway?"</p>
+          <p>Land, air, sea. How countries claim territory, defend it, and fight over it — using law, not just force. Disputes here have shaped the modern world.</p>
+        </div>
+
+        <div class="week reveal">
+          <div class="wnum">Week 10</div>
+          <h4>Jurisdiction & Competence of Courts</h4>
+          <p class="hook">"How far can a country reach?"</p>
+          <p>Can a country arrest someone on the other side of the world? You'll look at extraterritorial reach, universal jurisdiction, and state immunity — the rules that decide who can be tried, and where.</p>
+        </div>
+
+        <div class="week reveal">
+          <div class="wnum">Week 11</div>
+          <h4>Use of Force & Self-Defence</h4>
+          <p class="hook">"When is war actually legal?"</p>
+          <p>The big one. The prohibition on force, the UN Charter framework, Article 51, individual and collective self-defence — and the fine line between defence and aggression. <strong>This is the law at the heart of your simulation.</strong></p>
+        </div>
+
+        <div class="week reveal">
+          <div class="wnum">Week 12</div>
+          <h4>Private International Law: Conflict of Laws</h4>
+          <p class="hook">"When two countries' laws collide."</p>
+          <p>Not every dispute is between states. Sometimes it's two people, two countries, two sets of rules — and someone has to decide which one wins. You'll learn how connecting factors, domicile and public policy sort it out.</p>
+        </div>
+
+        <div class="week reveal">
+          <div class="wnum">Week 13</div>
+          <h4>Private International Law: Choice of Law</h4>
+          <p class="hook">"Whose law applies here?"</p>
+          <p>Contracts, torts, marriage — how courts decide which country's law governs a private dispute. Express choice, implied choice, and what happens when the parties never agreed.</p>
+        </div>
+
+        <div class="week reveal">
+          <div class="wnum">Week 14</div>
+          <h4>Recognition & Enforcement of Foreign Judgements</h4>
+          <p class="hook">"You won. Now can you actually collect?"</p>
+          <p>A judgment means nothing if you can't enforce it. You'll see how courts recognise and enforce decisions from other countries — and how arbitral awards get turned into real outcomes.</p>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ ASSESSMENT ============ -->
+  <section id="assessment">
+    <div class="container">
+      <div class="reveal">
+        <p class="kicker">How you're assessed</p>
+        <h2 class="section-title">One assignment. <em>Three ways to show what you know.</em></h2>
+        <p class="section-sub">
+          The simulation is assessed across writing, speaking and a test — so your
+          legal reasoning gets tested from every angle.
+        </p>
+      </div>
+
+      <div class="assess">
+        <div class="assess-card reveal">
+          <b>20%</b>
+          <span>Presentation — Diplomatic Role Simulation</span>
+        </div>
+        <div class="assess-card reveal">
+          <b>20%</b>
+          <span>Assignment — Case Study / Position Paper</span>
+        </div>
+        <div class="assess-card reveal">
+          <b>10%</b>
+          <span>Test</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ FINAL ============ -->
+  <section id="enroll">
+    <div class="container">
+      <div class="final reveal">
+        <h2>You are the <em>government</em>.</h2>
+        <p>
+          Your task isn't to find the lecturer's preferred answer. It's to make
+          the best legal and diplomatic decision for your country — and defend
+          it in front of everyone.
+        </p>
+        <div class="cta-row">
+          <a class="btn btn-primary" href="#mission">Back to your mission →</a>
+          <a class="btn btn-ghost" href="#weeks">Review the 14 weeks</a>
+        </div>
+      </div>
+
+      <footer>
+        <span><b>IRB20103 Introduction to International Law</b> · Semester 1, 2026/2027</span>
+        <span>Lecturer: <b>Faris Akmal Abd Rahman</b> · Faculty of Law and International Relations, UniSZA</span>
+      </footer>
+    </div>
+  </section>
+
+</div>
+
+<script>
+  /* ---------- progress bar ---------- */
+  const bar = document.getElementById('progress');
+  const onScroll = () => {
+    const h = document.documentElement.scrollHeight - window.innerHeight;
+    bar.style.width = (h > 0 ? (window.scrollY / h) * 100 : 0) + '%';
+  };
+  window.addEventListener('scroll', onScroll, {passive:true});
+  onScroll();
+
+  /* ---------- scroll reveal ---------- */
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach((e, i) => {
+      if (e.isIntersecting) {
+        setTimeout(() => e.target.classList.add('in'), i * 55);
+        io.unobserve(e.target);
+      }
+    });
+  }, {threshold: 0.12, rootMargin: '0px 0px -60px 0px'});
+  document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+
+  /* ---------- card spotlight ---------- */
+  document.querySelectorAll('.card').forEach(card => {
+    card.addEventListener('mousemove', e => {
+      const r = card.getBoundingClientRect();
+      card.style.setProperty('--x', (e.clientX - r.left) + 'px');
+      card.style.setProperty('--y', (e.clientY - r.top) + 'px');
+    });
+  });
+
+  /* ---------- blob parallax ---------- */
+  const blobs = document.querySelectorAll('.blob');
+  window.addEventListener('mousemove', e => {
+    const x = (e.clientX / window.innerWidth - 0.5);
+    const y = (e.clientY / window.innerHeight - 0.5);
+    blobs.forEach((b, i) => {
+      const depth = (i + 1) * 12;
+      b.style.marginLeft = (x * depth) + 'px';
+      b.style.marginTop  = (y * depth) + 'px';
+    });
+  }, {passive:true});
+
+  /* ---------- video facade → YouTube Shorts embed ---------- */
+  document.querySelectorAll('.video-card').forEach(card => {
+    const activate = () => {
+      const id = card.dataset.videoId;
+      if (!id || id === 'YOUR_VIDEO_ID') {
+        alert('Video not set yet.\n\nReplace "YOUR_VIDEO_ID" in the HTML with your YouTube video ID.');
+        return;
+      }
+      card.innerHTML =
+        '<iframe src="https://www.youtube.com/embed/' + id +
+        '?autoplay=1&rel=0&modestbranding=1&playsinline=1" ' +
+        'allow="autoplay; encrypted-media; picture-in-picture; fullscreen" ' +
+        'allowfullscreen></iframe>';
+      card.style.cursor = 'default';
+      card.setAttribute('aria-label','Course trailer playing');
+    };
+    card.addEventListener('click', activate);
+    card.addEventListener('keydown', e => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); activate(); }
+    });
+  });
+
+  /* ---------- PICK A SIDE mini game ---------- */
+  (function(){
+    const responses = {
+      alpha: [
+        "You back the strike. Bold.",
+        "You trust the self-defence claim. Confident.",
+        "You stand with the powerful. Classic.",
+        "You think Article 51 covers this. Interesting.",
+      ],
+      delta: [
+        "You back sovereignty. Principled.",
+        "You call it aggression. Firm.",
+        "You stand with the target. Brave.",
+        "You think the Charter was breached. Noted.",
+      ]
+    };
+
+    const buttons = document.querySelectorAll('.pick-btn');
+    const output  = document.getElementById('pickResponse');
+    if (!buttons.length || !output) return;
+
+    buttons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const side = btn.dataset.side;
+        const pool = responses[side];
+        const line = pool[Math.floor(Math.random() * pool.length)];
+
+        buttons.forEach(b => b.classList.toggle('active', b === btn));
+
+        output.innerHTML = `
+          <div class="pick-card">
+            ${line}
+            <strong>Now defend it in the class.</strong>
+          </div>
+        `;
+
+        requestAnimationFrame(() => {
+          const card = output.querySelector('.pick-card');
+          if (card) card.classList.add('show');
+        });
+      });
+    });
+  })();
+</script>
+</body>
+</html>
